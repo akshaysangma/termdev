@@ -824,14 +824,959 @@ claude -p "question"  # quick answer (no session)
 
 ---
 
+## 12. Vim Motions Primer
+
+If you're new to Vim/Neovim, start here. Run `vimtutor` in terminal for an interactive 30-minute tutorial.
+
+### Modes
+
+| Mode        | Enter with         | Purpose                                                   |
+| ----------- | ------------------ | --------------------------------------------------------- |
+| **Normal**  | `Esc` or `jk`      | Navigate, delete, copy, paste — where you spend most time |
+| **Insert**  | `i`, `a`, `o`, `O` | Type text                                                 |
+| **Visual**  | `v`, `V`, `Ctrl+v` | Select text                                               |
+| **Command** | `:`                | Run commands (`:w`, `:q`, `:s/old/new/g`)                 |
+
+Golden rule: **stay in Normal mode**. Enter Insert only to type, then immediately exit.
+
+### Movement (Normal mode)
+
+```
+        k           Line up
+    h       l       Character left/right
+        j           Line down
+
+    w               Next word start
+    b               Previous word start
+    e               Next word end
+
+    0               Start of line
+    ^  (or H)       First non-blank character
+    $  (or L)       End of line
+
+    gg              First line of file
+    G               Last line of file
+    12G             Go to line 12
+    12j             Jump 12 lines down (use relative numbers!)
+
+    Ctrl+d          Scroll half page down
+    Ctrl+u          Scroll half page up
+
+    %               Jump to matching bracket
+    {               Previous blank line
+    }               Next blank line
+
+    s + 2 chars     Flash jump (our LazyVim plugin)
+```
+
+### The Vim Grammar: verb + noun
+
+Vim commands follow a pattern: **operator** + **motion/text-object**
+
+```
+    d               delete (operator)
+    c               change (delete + enter insert mode)
+    y               yank (copy)
+    v               visual select
+
+    Combine with motions:
+    dw              delete word
+    d$              delete to end of line
+    dd              delete entire line
+    yy              yank entire line
+    cw              change word (delete word + insert mode)
+    ci"             change inside quotes
+    da(             delete around parentheses
+    yi{             yank inside braces
+    vip             visual select inside paragraph
+```
+
+### Text Objects (the superpower)
+
+| Text Object   | Inside (`i`)                 | Around (`a`)                     |
+| ------------- | ---------------------------- | -------------------------------- |
+| Word          | `ciw` change inner word      | `daw` delete a word (with space) |
+| Quotes `"`    | `ci"` change inside quotes   | `da"` delete quotes + content    |
+| Parens `()`   | `ci(` change inside parens   | `da(` delete parens + content    |
+| Braces `{}`   | `ci{` change inside braces   | `da{` delete braces + content    |
+| Brackets `[]` | `ci[` change inside brackets | `da[` delete brackets + content  |
+| Tags `<>`     | `cit` change inside HTML tag | `dat` delete entire tag          |
+| Paragraph     | `vip` select inner paragraph | `vap` select around paragraph    |
+
+These work everywhere. `ci"` in `"hello world"` changes the content inside the quotes. This is the #1 productivity boost in Vim.
+
+### Registers (clipboard slots)
+
+```
+    "ay             Yank to register a
+    "ap             Paste from register a
+    "+y             Yank to system clipboard
+    "+p             Paste from system clipboard
+    "0p             Paste from yank register (last yank, not delete)
+    :reg            Show all registers
+```
+
+### Marks (bookmarks)
+
+```
+    ma              Set mark 'a' at current position
+    'a              Jump to mark 'a'
+    ''              Jump to previous position
+    '.              Jump to last edit
+```
+
+### Search & Replace
+
+```
+    /pattern        Search forward
+    ?pattern        Search backward
+    n               Next match
+    N               Previous match
+    *               Search word under cursor (forward)
+    #               Search word under cursor (backward)
+
+    :s/old/new/g    Replace in current line
+    :%s/old/new/g   Replace in entire file
+    :%s/old/new/gc  Replace with confirmation
+```
+
+### Common Editing Patterns
+
+```
+    A               Append at end of line (enter insert mode)
+    I               Insert at start of line
+    o               Open new line below
+    O               Open new line above
+    J               Join current line with next
+    ~               Toggle case of character
+    .               Repeat last change (incredibly powerful)
+    u               Undo
+    Ctrl+r          Redo
+```
+
+### The 10 Commands That Cover 80% of Editing
+
+1. `i` / `Esc` (or `jk`) — enter/exit insert mode
+2. `dd` / `yy` / `p` — delete/copy/paste lines
+3. `ciw` — change a word
+4. `ci"` — change inside quotes
+5. `/pattern` + `n` — search and navigate
+6. `.` — repeat last change
+7. `*` — search word under cursor
+8. `ggVG` — select all
+9. `>>` / `<<` — indent/unindent
+10. `u` / `Ctrl+r` — undo/redo
+
+---
+
+## 13. SSH & Remote Workflow
+
+tmux is essential for remote work — sessions persist even if your connection drops.
+
+### Basic Remote Workflow
+
+```bash
+# SSH into server
+ssh user@server
+
+# Start or attach to tmux session
+tmux attach -t work || tmux new -s work
+
+# Work normally — if connection drops, tmux keeps running
+# Reconnect and reattach:
+ssh user@server
+tmux attach -t work
+# Everything is exactly where you left it
+```
+
+### Port Forwarding (for accessing remote services)
+
+```bash
+# Forward remote port 8080 to local 8080
+ssh -L 8080:localhost:8080 user@server
+
+# Forward multiple ports
+ssh -L 8080:localhost:8080 -L 5432:localhost:5432 user@server
+```
+
+### Copy files
+
+```bash
+# scp
+scp file.txt user@server:/path/
+
+# rsync (better for large/repeated transfers)
+rsync -avz ./src/ user@server:/path/src/
+```
+
+---
+
+## 14. Maintenance
+
+### Update Everything
+
+```bash
+# Update Homebrew + all packages
+brew update && brew upgrade
+
+# Update Neovim plugins (inside Neovim)
+:Lazy update
+
+# Update LSP servers (inside Neovim)
+:Mason
+# Press U to update all
+
+# Update tmux plugins (inside tmux)
+<prefix> U
+
+# Update tldr pages
+tldr --update
+
+# Update fzf-tab
+cd ~/.config/fzf-tab && git pull
+```
+
+### Sync Dotfiles After Changes
+
+If you edit a config directly (e.g. `~/.config/ghostty/config`), the dotfile in the repo is already updated (symlinks). Just commit:
+
+```bash
+cd ~/github.com/akshaysangma/termdev
+git add -A && git commit -m "update configs" && git push
+```
+
+If you edit in the repo, the live config updates instantly (same file via symlink).
+
+### Backup tmux Sessions
+
+```bash
+# Manual save
+<prefix> Ctrl+s
+
+# Sessions auto-save every 15 minutes (tmux-continuum)
+# After reboot, tmux auto-restores on first launch
+```
+
+---
+
+## 15. Troubleshooting
+
+| Issue                                             | Fix                                                               |
+| ------------------------------------------------- | ----------------------------------------------------------------- |
+| Ghostty theme `catppuccin-mocha` not found        | Use `Catppuccin Mocha` (space, capitals)                          |
+| mason.nvim config error on LazyVim                | Use `"williamboman/mason.nvim"` in plugin specs                   |
+| `golangci-lint` exit code 3                       | `brew install golangci-lint`                                      |
+| Neovim provider warnings (python/ruby/perl)       | Safe to ignore — disabled in our options.lua                      |
+| tmux `Ctrl+b I` doesn't install plugins           | Run `~/.tmux/plugins/tpm/bin/install_plugins`                     |
+| zoxide warning about configuration                | Ensure `eval "$(zoxide init zsh)"` is the **last line** in .zshrc |
+| Ghostty Quick Terminal not working                | Grant Accessibility permissions in System Settings                |
+| `Alt+C` doesn't work in macOS terminal            | Use `Esc+C` instead (macOS intercepts Alt)                        |
+| Neovim: "file changed on disk" after Claude edits | Normal — press `L` to reload or enable auto-reload                |
+| tmux colors look wrong                            | Ensure `set -g default-terminal "tmux-256color"` in tmux.conf     |
+| `bat` theme not found                             | Run `bat cache --build` after installing theme                    |
+| Slow shell startup                                | Check with `time zsh -i -c exit` — should be under 200ms          |
+
+---
+
 ## Appendix: Learning Path
 
 If you're new to this stack, learn in this order:
 
-1. **Week 1**: Ghostty basics + shell aliases + `z` + `Ctrl+R`
+1. **Week 1**: Ghostty basics + shell aliases + `z` + `Ctrl+R` + run `vimtutor`
 2. **Week 2**: tmux sessions/panes + Claude Code CLI
-3. **Week 3**: Neovim basics (movement, `<leader>` menu, file finding)
-4. **Week 4**: Neovim LSP features + lazygit
-5. **Ongoing**: Advanced Neovim (macros, text objects, flash), yazi, agent teams
+3. **Week 3**: Neovim basics (movement, `<leader>` menu, file finding, `ciw`, `ci"`)
+4. **Week 4**: Neovim LSP features + lazygit + text objects
+5. **Ongoing**: Advanced Neovim (macros, flash, registers, marks), yazi, agent teams
 
-The key is to learn one tool at a time. Don't try to master everything at once. Use `which-key` in Neovim — it shows you what's available as you type.
+The key is to learn one tool at a time. Don't try to master everything at once.
+
+**Shortcuts to remember:**
+
+- In Neovim: press `<leader>` and wait — which-key shows everything
+- In Neovim: `<leader>sk` to search keymaps
+- In tmux: `<prefix> ?` to list all bindings
+- In lazygit: `?` for help
+- In yazi: `~` for help
+- In any fzf list: type to filter, `Enter` to confirm
+
+---
+
+# Monster Level
+
+Everything below takes you from productive to dangerous.
+
+---
+
+## 16. tmux Project Layouts
+
+Instead of manually creating panes every time, script your workspace per project.
+
+### Simple Shell Script
+
+Create `~/.local/bin/dev` (make sure `~/.local/bin` is in your PATH):
+
+```bash
+#!/bin/bash
+# Usage: dev kraken | dev prisma | dev <project-name>
+PROJECT="${1:-main}"
+SESSION="$PROJECT"
+
+# If session exists, attach
+tmux has-session -t "$SESSION" 2>/dev/null && tmux attach -t "$SESSION" && exit
+
+# Create new session with layout
+DIR="$HOME/github.com/useinsider/$PROJECT"
+[ ! -d "$DIR" ] && DIR="$HOME/github.com/akshaysangma/$PROJECT"
+[ ! -d "$DIR" ] && DIR="$HOME" && echo "Warning: project dir not found, using home"
+
+tmux new-session -d -s "$SESSION" -c "$DIR"
+
+# Window 1: Editor + Claude Code
+tmux rename-window -t "$SESSION:1" "code"
+tmux send-keys -t "$SESSION:1" "nvim ." Enter
+tmux split-window -h -t "$SESSION:1" -c "$DIR"
+tmux send-keys -t "$SESSION:1.2" "claude" Enter
+tmux select-pane -t "$SESSION:1.1"
+
+# Window 2: Terminal (tests, builds, etc.)
+tmux new-window -t "$SESSION" -n "term" -c "$DIR"
+tmux split-window -v -t "$SESSION:2" -c "$DIR"
+
+# Window 3: Git
+tmux new-window -t "$SESSION" -n "git" -c "$DIR"
+tmux send-keys -t "$SESSION:3" "lazygit" Enter
+
+# Start on window 1
+tmux select-window -t "$SESSION:1"
+tmux attach -t "$SESSION"
+```
+
+```bash
+chmod +x ~/.local/bin/dev
+```
+
+Now `dev kraken` gives you:
+
+- **Window 1 "code"**: Neovim (left) | Claude Code (right)
+- **Window 2 "term"**: Two terminal panes for tests/builds
+- **Window 3 "git"**: lazygit full screen
+
+### Per-Project Layouts
+
+For projects needing specific layouts, create project-specific scripts:
+
+```bash
+# ~/.local/bin/dev-kraken
+#!/bin/bash
+# Kraken-specific: adds docker logs pane
+tmux new-session -d -s kraken -c ~/github.com/useinsider/kraken
+tmux send-keys "nvim ." Enter
+tmux split-window -h -c ~/github.com/useinsider/kraken
+tmux send-keys "claude" Enter
+tmux split-window -v -c ~/github.com/useinsider/kraken
+tmux send-keys "docker compose logs -f" Enter
+tmux select-pane -t 1
+tmux attach -t kraken
+```
+
+---
+
+## 17. Neovim Debugging (DAP)
+
+LazyVim has a DAP (Debug Adapter Protocol) extra. Enable it for step-through debugging.
+
+### Setup
+
+Add to `~/.config/nvim/lua/config/lazy.lua` inside the `spec` table:
+
+```lua
+{ import = "lazyvim.plugins.extras.dap.core" },
+```
+
+LazyVim auto-configures nvim-dap, nvim-dap-ui, and nvim-dap-virtual-text.
+
+For Go, `delve` is already installed (from our lang extras). For TypeScript/Node, Mason installs the JS debug adapter automatically.
+
+### DAP Keybinds
+
+| Action                    | Shortcut     |
+| ------------------------- | ------------ |
+| Toggle breakpoint         | `<leader>db` |
+| Start/continue debugging  | `<leader>dc` |
+| Step over                 | `<leader>dO` |
+| Step into                 | `<leader>di` |
+| Step out                  | `<leader>do` |
+| Toggle DAP UI             | `<leader>du` |
+| Run to cursor             | `<leader>dC` |
+| Evaluate expression       | `<leader>de` |
+| Terminate                 | `<leader>dt` |
+| Debug test (with neotest) | `<leader>td` |
+
+### Go Debugging Workflow
+
+```
+1. Open a Go file
+2. <leader>db on the line you want to break
+3. <leader>dc to start debugging (select "Debug" or "Debug Test")
+4. Debugger stops at breakpoint
+5. Hover over variables to see values (virtual text shows inline)
+6. <leader>dO to step over, <leader>di to step into
+7. <leader>du to toggle the full debug UI (variables, call stack, watches)
+8. <leader>dt to terminate
+```
+
+### TypeScript/Node Debugging
+
+```
+1. Add breakpoint: <leader>db
+2. <leader>dc → select "Node: Launch File" or "Node: Attach"
+3. Same step controls as Go
+```
+
+### Tips
+
+- **Conditional breakpoints**: `<leader>dB` lets you set a condition (e.g., `i > 100`)
+- **Log points**: Like breakpoints but print a message instead of stopping
+- **Watch expressions**: In the DAP UI, add variables to "watches" to track them across steps
+- **Virtual text**: Variable values appear inline next to your code as you step through
+
+---
+
+## 18. Advanced Claude Code Patterns
+
+### CLAUDE.md Best Practices
+
+Every project should have a `CLAUDE.md` at the root. Claude reads it automatically.
+
+**What to include:**
+
+```markdown
+# CLAUDE.md
+
+## Project Overview
+
+One paragraph describing what this project does.
+
+## Architecture
+
+- src/api/ — REST API handlers
+- src/services/ — Business logic
+- src/models/ — Database models
+- src/utils/ — Shared utilities
+
+## Commands
+
+- `make test` — run tests
+- `make lint` — lint code
+- `make build` — build project
+
+## Conventions
+
+- Use Go error wrapping: `fmt.Errorf("context: %w", err)`
+- All API handlers must validate input before processing
+- Tests use table-driven pattern
+- Never commit .env files
+
+## Current State
+
+- Feature X is in progress on branch feature/x
+- Known issue: Y is flaky in CI
+```
+
+**Rules for good CLAUDE.md:**
+
+- Keep under 200 lines (Claude truncates after that)
+- Be specific about conventions — Claude follows what you write
+- Include common commands — Claude will use them
+- Update it as the project evolves
+
+### Git Worktrees (Parallel Isolated Agents)
+
+Worktrees let multiple Claude agents work on the same repo **without conflicts** — each gets its own branch and working directory.
+
+```bash
+# Start Claude in an isolated worktree
+claude --worktree fix-login-bug
+
+# This creates:
+# .claude/worktrees/fix-login-bug/  (isolated copy)
+# Branch: worktree-fix-login-bug
+
+# Run another agent simultaneously
+claude --worktree add-caching
+
+# Both agents work independently on different branches
+# When done, merge the branches normally
+```
+
+**When to use worktrees vs tmux panes:**
+
+| Scenario                         | Use                           |
+| -------------------------------- | ----------------------------- |
+| Agents touch **different files** | tmux panes (same branch)      |
+| Agents touch **same files**      | Worktrees (isolated branches) |
+| Quick parallel research          | tmux panes                    |
+| Independent features             | Worktrees                     |
+
+### Subagent Patterns
+
+Claude Code can spawn subagents internally for parallel work.
+
+**Sequential** (default) — one task at a time:
+
+```
+You: refactor auth module, then add tests, then update docs
+```
+
+**Parallel** — ask Claude to spawn subagents:
+
+```
+You: I need three things done in parallel:
+1. Add input validation to all API handlers in src/api/
+2. Write unit tests for src/services/auth.ts
+3. Update the README with the new API endpoints
+
+Use subagents to do these simultaneously.
+```
+
+**When parallel works:**
+
+- Tasks touch different files
+- No shared state between tasks
+- Clear boundaries
+
+**When parallel breaks:**
+
+- Tasks depend on each other's output
+- Multiple tasks modify the same file
+- Tasks need to coordinate
+
+### Context Window Management
+
+```
+/compact           # Summarize conversation, free up context
+/clear             # Nuclear option — start fresh
+Esc Esc            # Rewind last change (code + conversation)
+```
+
+**Strategy for long sessions:**
+
+1. Start with a focused task description
+2. Let Claude read files (don't paste code)
+3. After 15-20 back-and-forths, use `/compact`
+4. If Claude starts "forgetting" context, `/compact` or start fresh
+5. Use `@file.ts` to re-anchor Claude on specific files
+
+### Headless Automation
+
+```bash
+# Run a task non-interactively
+claude -p "add error handling to all functions in src/api/" \
+  --allowedTools Edit,Write,Read,Bash
+
+# Chain multiple tasks
+claude -p "fix lint errors" && claude -p "run tests and fix failures"
+
+# Use in CI/CD
+claude -p "review this PR for security issues" < diff.patch
+
+# Pipe input
+git diff HEAD~1 | claude -p "summarize these changes for a PR description"
+```
+
+### Multi-Agent Team Patterns
+
+**Researcher + Implementer:**
+
+```bash
+# Pane 1: Researcher
+claude "Analyze src/auth/ — document every function, its purpose,
+  inputs, outputs, and any edge cases. Write to /tmp/auth-analysis.md"
+
+# Pane 2: Implementer (start after researcher finishes)
+claude "Read /tmp/auth-analysis.md. Now add refresh token support
+  to the auth module following the existing patterns."
+```
+
+**Reviewer + Fixer:**
+
+```bash
+# Pane 1: Reviewer
+claude "Review all files changed in the last commit.
+  Write issues to /tmp/review.md with file:line format."
+
+# Pane 2: Fixer
+claude "Read /tmp/review.md and fix each issue listed."
+```
+
+**Test Writer + Implementer:**
+
+```bash
+# Pane 1: Test writer (TDD style — tests first)
+claude "Write failing tests for a new UserProfile cache layer.
+  It should cache getUserProfile results in Redis with 5min TTL."
+
+# Pane 2: Implementer (after tests exist)
+claude "Read the tests in src/cache/userProfile.test.ts.
+  Implement the code to make all tests pass."
+```
+
+---
+
+## 19. Git Power Moves
+
+### Interactive Rebase (rewrite history)
+
+```bash
+# In lazygit: go to commits panel, press 'e' on a commit
+# Or from terminal:
+git rebase -i HEAD~5    # rewrite last 5 commits
+```
+
+In the rebase editor:
+
+```
+pick   abc1234  Add feature       # keep as-is
+squash def5678  Fix typo          # merge into previous commit
+fixup  ghi9012  Another fix       # merge, discard message
+reword jkl3456  Bad message       # change commit message
+drop   mno7890  Oops              # delete this commit
+edit   pqr1234  Needs splitting   # pause here to amend
+```
+
+**Common patterns:**
+
+```bash
+# Squash last 3 commits into one
+git rebase -i HEAD~3    # mark 2nd and 3rd as 'squash'
+
+# Reorder commits
+git rebase -i HEAD~5    # rearrange the lines
+
+# Edit a commit message
+git rebase -i HEAD~3    # mark as 'reword'
+```
+
+### Git Bisect (find which commit broke something)
+
+```bash
+git bisect start
+git bisect bad              # current commit is broken
+git bisect good v1.0.0      # this tag/commit was working
+# Git checks out a middle commit
+# Test it, then:
+git bisect good             # or 'git bisect bad'
+# Repeat until Git finds the exact commit
+git bisect reset            # done, go back to original state
+```
+
+**Automate with a test:**
+
+```bash
+git bisect start HEAD v1.0.0
+git bisect run make test    # Git runs your test on each commit automatically
+```
+
+### Git Reflog (rescue anything)
+
+```bash
+git reflog                  # shows EVERY state your repo has been in
+# Find the commit hash you want to recover
+git checkout abc1234        # go look at it
+git branch rescue abc1234   # or create a branch from it
+```
+
+**Common rescues:**
+
+```bash
+# Undo a bad reset
+git reflog
+git reset --hard HEAD@{2}   # go back 2 operations
+
+# Recover a deleted branch
+git reflog
+git branch recovered abc1234
+
+# Undo a bad rebase
+git reflog
+git reset --hard HEAD@{5}   # before the rebase started
+```
+
+### Stash Workflows
+
+```bash
+git stash                   # save uncommitted changes
+git stash -m "wip: feature" # with a message
+git stash list              # see all stashes
+git stash pop               # apply most recent + delete it
+git stash apply stash@{2}   # apply specific stash, keep it
+git stash drop stash@{0}    # delete a stash
+git stash branch new-branch # create branch from stash
+
+# Stash specific files
+git stash push -m "partial" src/api/handler.go
+```
+
+### Advanced Git Aliases
+
+Add to `.gitconfig`:
+
+```gitconfig
+[alias]
+    # Pretty log
+    lg = log --oneline --graph --decorate --all
+    # Show what I did today
+    today = log --since='6am' --oneline --author='Akshay'
+    # Undo last commit (keep changes)
+    undo = reset --soft HEAD~1
+    # Amend without editing message
+    oops = commit --amend --no-edit
+    # Show changed files between branches
+    changed = diff --name-only
+```
+
+---
+
+## 20. Shell Piping & Composition
+
+The terminal's superpower: composing small tools into powerful pipelines.
+
+### Pipe Basics
+
+```bash
+# | sends stdout of left to stdin of right
+command1 | command2 | command3
+
+# Examples:
+rg "TODO" | wc -l                          # count TODOs
+rg "func " --no-filename | sort | uniq     # list unique function names
+fd -e go | xargs wc -l | sort -n           # Go files by line count
+git log --oneline | head -20               # last 20 commits
+ps aux | rg node                           # find node processes
+```
+
+### xargs (turn input into arguments)
+
+```bash
+# Delete all .log files
+fd -e log | xargs rm
+
+# Open all Go files with TODOs in Neovim
+rg -l "TODO" --type go | xargs nvim
+
+# Run tests for changed files
+git diff --name-only | grep _test.go | xargs go test
+
+# Parallel execution (-P flag)
+fd -e png | xargs -P 4 optipng              # compress 4 images at a time
+```
+
+### Process Substitution
+
+```bash
+# Compare two command outputs
+diff <(git branch -r) <(git branch -l)
+
+# Sort and compare two files
+diff <(sort file1.txt) <(sort file2.txt)
+```
+
+### Real-World Pipelines
+
+```bash
+# Find largest files in repo
+fd --type f | xargs du -h | sort -rh | head -20
+
+# Find functions with more than 50 lines (Go)
+rg -n "^func " --type go | while read line; do
+  file=$(echo "$line" | cut -d: -f1)
+  linenum=$(echo "$line" | cut -d: -f2)
+  echo "$file:$linenum"
+done
+
+# Generate a markdown list of all API endpoints
+rg "router\.(GET|POST|PUT|DELETE)" --no-heading --type go \
+  | sd '.*router\.(GET|POST|PUT|DELETE)\("([^"]+)".*' '- $1 `$2`' \
+  | sort
+
+# Count lines of code by language
+fd --type f | xargs wc -l 2>/dev/null | sort -rn | head -20
+
+# Find duplicate files by content
+fd --type f | xargs md5sum | sort | uniq -w32 -d
+
+# Quick JSON API exploration
+curl -s https://api.example.com/users | jq '.[] | {name, email}'
+
+# Chain Claude with shell
+git diff HEAD~1 | claude -p "write a changelog entry for these changes"
+
+# Monitor logs and alert
+tail -f app.log | rg --line-buffered "ERROR" | while read line; do
+  echo "ERROR: $line" | tee -a errors.log
+done
+```
+
+### Useful One-Liners
+
+```bash
+# Replace string across entire project
+rg -l "oldName" --type ts | xargs sd "oldName" "newName"
+
+# Find files changed in last 24h
+fd --changed-within 24h
+
+# Show git contributors ranked by commits
+git shortlog -sn --all
+
+# Find all ports in use
+lsof -i -P -n | rg LISTEN
+
+# Watch a command (refresh every 2s)
+watch -n 2 'git status --short'
+
+# Create a quick HTTP server
+python3 -m http.server 8000
+
+# Get your public IP
+curl -s ifconfig.me
+```
+
+---
+
+## 21. Neovim Macros in Practice
+
+Macros record a sequence of keystrokes and replay them. They're the terminal developer's "automation for repetitive edits."
+
+### Basic Macro Flow
+
+```
+qa          Start recording to register 'a'
+(do edits)  Your keystrokes are recorded
+q           Stop recording
+@a          Replay macro once
+5@a         Replay 5 times
+@@          Replay last macro
+```
+
+### Real-World Examples
+
+**Add error handling to multiple functions:**
+
+Starting with:
+
+```go
+result := doSomething()
+result2 := doAnother()
+result3 := doThird()
+```
+
+Record macro on first line:
+
+```
+qa                    # start recording
+^                     # go to start of line
+ct=                   # change to '=' → now in insert mode
+result, err :=        # type the new text
+Esc                   # exit insert mode
+A                     # append at end of line
+(enter)               # new line
+if err != nil {       # type error handling
+(enter)
+    return err
+(enter)
+}
+Esc                   # back to normal mode
+j                     # move to next line
+q                     # stop recording
+2@a                   # replay on next 2 lines
+```
+
+**Convert a list to JSON:**
+
+Starting with:
+
+```
+apple
+banana
+cherry
+```
+
+```
+qa                    # start recording
+I"Esc                 # insert " at start
+A",Esc                # append ", at end
+j                     # next line
+q                     # stop recording
+2@a                   # replay on remaining lines
+```
+
+**Add console.log for debugging:**
+
+```
+qa                    # start
+yiw                   # yank inner word (variable name)
+o                     # open line below
+console.log("        # type start
+Esc                   # exit insert
+pa                    # paste variable name, append
+:", Esc               # type :",
+pa                    # paste again
+A);Esc                # close the statement
+j                     # next line
+q                     # stop
+```
+
+Result: `console.log("varName:", varName);`
+
+### Macro Tips
+
+- **Plan before recording**: Think through the exact keystrokes
+- **Start from a consistent position**: Use `0` or `^` at the start
+- **End on the next line**: So `@a` chains naturally
+- **Use word motions, not character motions**: `w`, `b`, `e` instead of `l`
+- **Test on one line first**: `@a` once, then `100@a` if it works
+- **Edit a macro**: `"ap` to paste register a as text, edit it, then `"ay$` to save back
+- **Recursive macros**: `qaqa` (clear a), then `qa ... @a q` — the macro calls itself until it fails (end of file)
+
+---
+
+## Appendix: Learning Path
+
+If you're new to this stack, learn in this order:
+
+1. **Week 1**: Ghostty basics + shell aliases + `z` + `Ctrl+R` + run `vimtutor`
+2. **Week 2**: tmux sessions/panes + Claude Code CLI
+3. **Week 3**: Neovim basics (movement, `<leader>` menu, file finding, `ciw`, `ci"`)
+4. **Week 4**: Neovim LSP features + lazygit + text objects
+5. **Month 2**: Shell piping + git power moves + macros
+6. **Month 3**: Claude Code agent teams + worktrees + DAP debugging + project layouts
+7. **Ongoing**: Build muscle memory. Speed comes from not thinking about the tool.
+
+**How to practice:**
+
+- Do `vimtutor` once a week for the first month
+- Force yourself to use `rg` instead of GitHub search
+- Force yourself to use lazygit instead of `git` commands for a week
+- Pick one Vim motion per day and use it everywhere
+- After a month, your fingers will know more than your brain
+
+**Shortcuts to remember:**
+
+- In Neovim: press `<leader>` and wait — which-key shows everything
+- In Neovim: `<leader>sk` to search keymaps
+- In tmux: `<prefix> ?` to list all bindings
+- In lazygit: `?` for help
+- In yazi: `~` for help
+- In any fzf list: type to filter, `Enter` to confirm
+
+Sources:
+
+- [Vim Motions Cheatsheet (LazyVim friendly)](https://ahmedjama.com/blog/2025/12/vim-motions-cheatsheet/)
+- [LazyVim Cheatsheet](https://cheatography.com/thesujit/cheat-sheets/lazyvim-neovim/)
+- [Vim: The Complete Guide 2026](https://devtoolbox.dedyn.io/blog/vim-complete-guide)
+- [Claude Code Common Workflows](https://code.claude.com/docs/en/common-workflows)
+- [Claude Code Agent Teams Guide](https://claudefa.st/blog/guide/agents/agent-teams)
+- [Claude Code Sub-Agent Patterns](https://claudefa.st/blog/guide/agents/sub-agent-best-practices)
+- [LazyVim DAP Core](http://www.lazyvim.org/extras/dap/core)
+- [nvim-dap-go](https://github.com/leoluz/nvim-dap-go)
