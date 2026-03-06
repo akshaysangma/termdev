@@ -1,0 +1,97 @@
+
+# Claude Code Telemetry
+[ -f "$HOME/.claude/env" ] && source "$HOME/.claude/env"
+export PATH="$HOME/.local/bin:$PATH"
+
+# --- Completion ---
+autoload -Uz compinit && compinit
+
+# --- Zsh Plugins ---
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source ~/.config/fzf-tab/fzf-tab.plugin.zsh
+
+# --- Tool Init ---
+eval "$(starship init zsh)"
+source <(fzf --zsh)
+
+# --- fzf Config ---
+# Catppuccin Mocha colors
+export FZF_DEFAULT_OPTS=" \
+  --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
+  --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+  --color=marker:#b4befe,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
+  --color=selected-bg:#45475a \
+  --multi"
+
+# Use fd for file listing
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+
+# --- Aliases ---
+# Modern CLI replacements
+alias ls="eza --icons"
+alias ll="eza -la --icons --git"
+alias lt="eza --tree --icons --level=2"
+alias cat="bat"
+alias grep="rg"
+alias find="fd"
+alias top="btop"
+alias diff="delta"
+alias cd="z"
+
+# Git shortcuts
+alias g="git"
+alias gs="git status"
+alias lg="lazygit"
+
+# Quick navigation
+alias ..="cd .."
+alias ...="cd ../.."
+
+# fzf + ripgrep interactive search
+alias rgf='rg --files | fzf --preview "bat --color=always {}"'
+
+# --- Functions ---
+
+# Open file in Neovim via fzf
+vf() {
+  local file
+  file=$(fd --type f --hidden --exclude .git | fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}')
+  [ -n "$file" ] && nvim "$file"
+}
+
+# cd into directory via fzf
+cdf() {
+  local dir
+  dir=$(fd --type d --hidden --exclude .git | fzf --preview 'eza --tree --level=2 --icons {}')
+  [ -n "$dir" ] && cd "$dir"
+}
+
+# Git branch switcher via fzf
+gbf() {
+  local branch
+  branch=$(git branch -a | sed 's/^..//' | sed 's|remotes/origin/||' | sort -u | fzf --preview 'git log --oneline -10 {}')
+  [ -n "$branch" ] && git checkout "$branch"
+}
+
+# Kill process via fzf
+fkill() {
+  local pid
+  pid=$(ps aux | fzf --header-lines=1 | awk '{print $2}')
+  [ -n "$pid" ] && kill -9 "$pid"
+}
+
+# Quick tmux session creator/switcher
+t() {
+  if [ -z "$1" ]; then
+    tmux attach 2>/dev/null || tmux new -s main
+  else
+    tmux has-session -t "$1" 2>/dev/null && tmux attach -t "$1" || tmux new -s "$1"
+  fi
+}
+
+# --- Zoxide (must be last) ---
+eval "$(zoxide init zsh)"
